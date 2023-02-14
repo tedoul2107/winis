@@ -8,6 +8,8 @@ import jwt
 from rest_framework import exceptions
 from rest_framework.authentication import get_authorization_header
 from rest_framework import generics
+from django.db.models import Sum, Count
+from datetime import timedelta, datetime
 
 
 def decode_access_token(token):
@@ -507,10 +509,6 @@ class SearchProductAPIView(generics.ListAPIView):
 
     def get_queryset(self):
 
-
-        # products = Category.objects.filter(diameter=diameter)
-        # products = SubCategory
-
         products = Product.objects.all()
 
         diameter = self.request.query_params.get('diameter', 14.5)
@@ -521,3 +519,46 @@ class SearchProductAPIView(generics.ListAPIView):
             .filter(subcategoryId_id__cycle_period=cycle_period)
 
         return products
+
+
+class StatAPIView(APIView):
+
+    def get_total_lens(self):
+        total = Product.objects.all().aggregate(Sum('quantity'))
+        return total
+
+    def get_total_sales(self):
+        total = (StockVariation.objects
+                  .values('type')
+                  .annotate(dcount=Sum('quantity'))
+                  .order_by()
+                  )
+        return total
+
+    def get_week_sales(self):
+        total = (StockVariation.objects.filter(datetime__gte=datetime.now()-timedelta(days=7))
+                 .values('type')
+                 .annotate(dcount=Sum('quantity'))
+                 .order_by()
+                 )
+        return total
+
+    def get(self, request):
+
+        total_lens = self.get_total_lens()
+        total_sales = self.get_total_sales()
+        week_sales = self.get_week_sales()
+
+        if len(week_sales) > 0:
+            week_sales = week_sales[0]['dcount']
+        else:
+            week_sales = 0
+
+        total_sales = total_sales[0]['dcount']
+        total_lens = total_lens['quantity__sum']
+
+        # print(total_sales)
+        # print(total_lens)
+        # print(week_sales)
+
+        return JsonResponse({"total_lens": total_lens, "total_sales": total_sales, "week_sales": week_sales}, safe=False, status=status.HTTP_200_OK)
