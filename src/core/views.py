@@ -37,10 +37,10 @@ class LoginAPIView(APIView):
         user = User.objects.filter(username=request.data['username']).first()
 
         if not user:
-            raise APIException('Invalid credentials!')
+            return JsonResponse({'detail': 'Invalid credentials!'}, status=status.HTTP_401_UNAUTHORIZED)
 
         if not user.check_password(request.data['password']):
-            raise APIException('Invalid credentials!')
+            return JsonResponse({'detail': 'Invalid credentials!'}, status=status.HTTP_401_UNAUTHORIZED)
 
         # serializer = UserSerializer(user)
         # return Response(serializer.data)

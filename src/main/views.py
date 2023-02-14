@@ -2,11 +2,12 @@ from django.http import JsonResponse
 from rest_framework import status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from .serializers import CategorySerializer, SubCategorySerializer
-from .models import Category, SubCategory
+from .serializers import CategorySerializer, SubCategorySerializer, ProductSerializer, StockVariationSerializer
+from .models import Category, SubCategory, Product, StockVariation
 import jwt
 from rest_framework import exceptions
 from rest_framework.authentication import get_authorization_header
+from rest_framework import generics
 
 
 def decode_access_token(token):
@@ -32,8 +33,10 @@ class CategoryAPIView(APIView):
 
         for i in range(len(serializer.data)):
             serializer.data[i]['links'] = [
-                {"rel": "self", "href": f"/api/v1/categories/{serializer.data[i]['id']}", "action": "GET", "types": ["application/json"]},
-                {"rel": "subcategories", "href": f"/api/v1/categories/{serializer.data[i]['id']}/subcategories", "action": "GET", "types": ["application/json"]}
+                {"rel": "self", "href": f"/api/v1/categories/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "subcategories", "href": f"/api/v1/categories/{serializer.data[i]['id']}/subcategories",
+                 "action": "GET", "types": ["application/json"]}
             ]
 
             auth = get_authorization_header(request).split()
@@ -44,13 +47,16 @@ class CategoryAPIView(APIView):
                     id = decode_access_token(token)
 
                     serializer.data[i]['links'].append(
-                        {"rel": "self", "href": f"/api/v1/categories/{serializer.data[i]['id']}", "action": "PUT", "types": ["application/json"]}
+                        {"rel": "self", "href": f"/api/v1/categories/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
                     )
                     serializer.data[i]['links'].append(
-                        {"rel": "self", "href": f"/api/v1/categories/{serializer.data[i]['id']}", "action": "DELETE", "types": ["application/json"]}
+                        {"rel": "self", "href": f"/api/v1/categories/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
                     )
                     serializer.data[i]['links'].append(
-                        {"rel": "subcategories", "href": f"/api/v1/categories/{serializer.data[i]['id']}/subcategories", "action": "POST", "types": ["application/json"]}
+                        {"rel": "subcategories", "href": f"/api/v1/categories/{serializer.data[i]['id']}/subcategories",
+                         "action": "POST", "types": ["application/json"]}
                     )
 
                 except Exception:
@@ -72,8 +78,10 @@ class ModifyCategoryAPIView(APIView):
 
         user_dict = [serializer.data.copy(), ]
         user_dict[0]['links'] = [
-            {"rel": "self", "href": f"/api/v1/categories/{serializer.data['id']}", "action": "GET", "types": ["application/json"]},
-            {"rel": "subcategories", "href": f"/api/v1/categories/{serializer.data['id']}/subcategories", "action": "GET", "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/categories/{serializer.data['id']}", "action": "GET",
+             "types": ["application/json"]},
+            {"rel": "subcategories", "href": f"/api/v1/categories/{serializer.data['id']}/subcategories",
+             "action": "GET", "types": ["application/json"]},
         ]
 
         auth = get_authorization_header(request).split()
@@ -132,7 +140,6 @@ class SubCategoryAPIView(APIView):
 
         request.data['categoryId'] = id
         serializer = SubCategorySerializer(data=request.data)
-        print(request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
@@ -144,8 +151,10 @@ class SubCategoryAPIView(APIView):
 
         for i in range(len(serializer.data)):
             serializer.data[i]['links'] = [
-                {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "GET", "types": ["application/json"]},
-                {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products", "action": "GET", "types": ["application/json"]}
+                {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products",
+                 "action": "GET", "types": ["application/json"]}
             ]
 
             auth = get_authorization_header(request).split()
@@ -156,13 +165,16 @@ class SubCategoryAPIView(APIView):
                     id = decode_access_token(token)
 
                     serializer.data[i]['links'].append(
-                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "PUT", "types": ["application/json"]}
+                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
                     )
                     serializer.data[i]['links'].append(
-                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "DELETE", "types": ["application/json"]}
+                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
                     )
                     serializer.data[i]['links'].append(
-                        {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products", "action": "POST", "types": ["application/json"]}
+                        {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products",
+                         "action": "POST", "types": ["application/json"]}
                     )
 
                 except Exception:
@@ -224,7 +236,6 @@ class ModifySubCatAPIView(APIView):
 
         request.data['categoryId'] = subcategory.categoryId.id
 
-        print(request.data)
         serializer = SubCategorySerializer(subcategory, data=request.data)
 
         serializer.is_valid(raise_exception=True)
@@ -282,8 +293,10 @@ class ListSubCatAPIView(APIView):
 
         for i in range(len(serializer.data)):
             serializer.data[i]['links'] = [
-                {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "GET", "types": ["application/json"]},
-                {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products", "action": "GET", "types": ["application/json"]}
+                {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products",
+                 "action": "GET", "types": ["application/json"]}
             ]
 
             auth = get_authorization_header(request).split()
@@ -294,16 +307,217 @@ class ListSubCatAPIView(APIView):
                     id = decode_access_token(token)
 
                     serializer.data[i]['links'].append(
-                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "PUT", "types": ["application/json"]}
+                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
                     )
                     serializer.data[i]['links'].append(
-                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "DELETE", "types": ["application/json"]}
+                        {"rel": "self", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
                     )
                     serializer.data[i]['links'].append(
-                        {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products", "action": "POST", "types": ["application/json"]}
+                        {"rel": "products", "href": f"/api/v1/subcategories/{serializer.data[i]['id']}/products",
+                         "action": "POST", "types": ["application/json"]}
                     )
 
                 except Exception:
                     pass
 
         return JsonResponse(serializer.data, safe=False)
+
+
+class ProductAPIView(APIView):
+
+    def post(self, request, id):
+
+        request.data['subcategoryId'] = id
+        serializer = ProductSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+
+    def get(self, request, id):
+
+        products = Product.objects.filter(subcategoryId=id)
+        serializer = ProductSerializer(products, many=True)
+
+        for i in range(len(serializer.data)):
+            serializer.data[i]['links'] = [
+                {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                 "action": "GET", "types": ["application/json"]}
+            ]
+
+            auth = get_authorization_header(request).split()
+            if auth and len(auth) == 2:
+                token = auth[1]
+
+                try:
+                    id = decode_access_token(token)
+
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                         "action": "POST", "types": ["application/json"]}
+                    )
+
+                except Exception:
+                    pass
+
+        return JsonResponse(serializer.data, safe=False)
+
+
+class ModifyProductAPIView(APIView):
+
+    def get(self, request, id):
+
+        try:
+            product = Product.objects.get(pk=id)
+        except Product.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = ProductSerializer(product)
+
+        user_dict = [serializer.data.copy(), ]
+        user_dict[0]['links'] = [
+            {"rel": "self", "href": f"/api/v1/products/{serializer.data['id']}", "action": "GET",
+             "types": ["application/json"]},
+            {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data['id']}/stock_changes",
+             "action": "GET", "types": ["application/json"]}
+        ]
+
+        auth = get_authorization_header(request).split()
+        if auth and len(auth) == 2:
+            token = auth[1]
+
+            try:
+                id = decode_access_token(token)
+
+                user_dict[0]['links'].append(
+                    {"rel": "self", "href": f"/api/v1/products/{serializer.data['id']}", "action": "PUT",
+                     "types": ["application/json"]}
+                )
+                user_dict[0]['links'].append(
+                    {"rel": "self", "href": f"/api/v1/products/{serializer.data['id']}", "action": "DELETE",
+                     "types": ["application/json"]}
+                )
+                user_dict[0]['links'].append(
+                    {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data['id']}/stock_changes",
+                     "action": "POST", "types": ["application/json"]}
+                )
+
+            except Exception:
+                pass
+
+        return JsonResponse(user_dict, safe=False)
+
+    def put(self, request, id):
+
+        try:
+            product = Product.objects.get(pk=id)
+        except Product.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        request.data._mutable = True
+
+        request.data['subcategoryId'] = product.subcategoryId.id
+        print(request.data)
+        serializer = ProductSerializer(product, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return JsonResponse(serializer.data, safe=False)
+
+    def delete(self, request, id):
+
+        try:
+            product = Product.objects.get(pk=id)
+        except Product.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        product.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+class ListProductAPIView(APIView):
+
+    def get(self, request):
+        products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
+
+        for i in range(len(serializer.data)):
+            serializer.data[i]['links'] = [
+                {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                 "action": "GET", "types": ["application/json"]}
+            ]
+
+            auth = get_authorization_header(request).split()
+            if auth and len(auth) == 2:
+                token = auth[1]
+
+                try:
+                    id = decode_access_token(token)
+
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                         "action": "POST", "types": ["application/json"]}
+                    )
+
+                except Exception:
+                    pass
+
+        return JsonResponse(serializer.data, safe=False)
+
+
+class StockVariationAPIView(APIView):
+
+    def post(self, request, id):
+        request.data['productId'] = id
+        serializer = StockVariationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+
+    def get(self, request, id):
+        stockchanges = StockVariation.objects.filter(productId=id)
+        serializer = StockVariationSerializer(stockchanges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
+class SearchProductAPIView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+
+
+        # products = Category.objects.filter(diameter=diameter)
+        # products = SubCategory
+
+        products = Product.objects.all()
+
+        diameter = self.request.query_params.get('diameter', 14.5)
+        n_tone = self.request.query_params.get('n_tone', 3)
+        cycle_period = self.request.query_params.get('cycle_period', 'Yearly')
+
+        products = products.filter(subcategoryId_id__categoryId_id__diameter=diameter).filter(subcategoryId_id__n_tone=n_tone)\
+            .filter(subcategoryId_id__cycle_period=cycle_period)
+
+        return products

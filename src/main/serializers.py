@@ -1,7 +1,7 @@
 import hashlib
 
 from rest_framework.serializers import ModelSerializer
-from .models import Category, SubCategory
+from .models import Category, SubCategory, Product, StockVariation
 
 
 class CategorySerializer(ModelSerializer):
@@ -53,5 +53,47 @@ class SubCategorySerializer(ModelSerializer):
         instance.cycle_period = validated_data.get('cycle_period', instance.cycle_period)
         instance.eTag = hashlib.md5(instance.contract().encode('utf-8')).hexdigest()
 
+        instance.save()
+        return instance
+
+
+class ProductSerializer(ModelSerializer):
+
+    class Meta:
+        model = Product
+        fields = ['id', 'subcategoryId', 'model', 'color', 'image', 'quantity', 'eTag']
+        extra_kwargs = {
+            'eTag': {"read_only": True}
+        }
+
+    def create(self, validated_data):
+        instance = self.Meta.model(**validated_data)
+        instance.eTag = hashlib.md5(instance.contract().encode('utf-8')).hexdigest()
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        instance.subcategoryId = validated_data.get('subcategoryId', instance.subcategoryId)
+        instance.model = validated_data.get('model', instance.model)
+        instance.color = validated_data.get('color', instance.color)
+        instance.image = validated_data.get('image', instance.image)
+        instance.quantity = validated_data.get('quantity', instance.quantity)
+        instance.eTag = hashlib.md5(instance.contract().encode('utf-8')).hexdigest()
+
+        instance.save()
+        return instance
+
+
+class StockVariationSerializer(ModelSerializer):
+    class Meta:
+        model = StockVariation
+        fields = ['id', 'productId', 'type', 'quantity', 'datetime', 'eTag']
+        extra_kwargs = {
+            'eTag': {"read_only": True}
+        }
+
+    def create(self, validated_data):
+        instance = self.Meta.model(**validated_data)
+        instance.eTag = hashlib.md5(instance.contract().encode('utf-8')).hexdigest()
         instance.save()
         return instance
