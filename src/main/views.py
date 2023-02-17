@@ -504,7 +504,7 @@ class StockVariationAPIView(APIView):
         return JsonResponse(serializer.data, safe=False)
 
 
-class SearchProductAPIView(generics.ListAPIView):
+class FilterProductAPIView(generics.ListAPIView):
     serializer_class = ProductSerializer
 
     def get_queryset(self):
@@ -517,6 +517,20 @@ class SearchProductAPIView(generics.ListAPIView):
 
         products = products.filter(subcategoryId_id__categoryId_id__diameter=diameter).filter(subcategoryId_id__n_tone=n_tone)\
             .filter(subcategoryId_id__cycle_period=cycle_period)
+
+        return products
+
+
+class SearchProductAPIView(generics.ListAPIView):
+    serializer_class = ProductSerializer
+
+    def get_queryset(self):
+
+        products = Product.objects.all()
+
+        keyword = self.request.query_params.get('keyword', 'FreshTone Natural')
+
+        products = products.filter(subcategoryId_id__name__contains=keyword)
 
         return products
 
