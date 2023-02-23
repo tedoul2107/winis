@@ -430,7 +430,7 @@ class ModifyProductAPIView(APIView):
         request.data._mutable = True
 
         request.data['subcategoryId'] = product.subcategoryId.id
-        print(request.data)
+        # print(request.data)
         serializer = ProductSerializer(product, data=request.data)
 
         serializer.is_valid(raise_exception=True)
@@ -495,6 +495,25 @@ class StockVariationAPIView(APIView):
         request.data['productId'] = id
         serializer = StockVariationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
+
+        try:
+            product = Product.objects.get(pk=id)
+        except Product.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        if request.data['type'] == 'PLUS':
+            product.quantity += request.data['quantity']
+        elif request.data['type'] == 'MINUS':
+            if request.data['quantity'] > product.quantity:
+                return JsonResponse({"message": "error, product is so few"})
+            else:
+                product.quantity -= request.data['quantity']
+
+        serializer_p = ProductSerializer(product, data={'quantity': product.quantity, 'subcategoryId': product.subcategoryId.id,
+                                                        'model': product.model, 'color': product.color})
+        serializer_p.is_valid(raise_exception=True)
+        serializer_p.save()
+
         serializer.save()
         return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
 
@@ -530,7 +549,7 @@ class SearchProductAPIView(generics.ListAPIView):
 
         keyword = self.request.query_params.get('keyword', 'FreshTone Natural')
 
-        products = products.filter(subcategoryId_id__name__contains=keyword)
+        products = products.filter(subcategoryId_id__name__icontains=keyword)
 
         return products
 
