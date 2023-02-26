@@ -6,7 +6,7 @@ from django.dispatch import receiver
 
 class Category(models.Model):
     name = models.CharField(max_length=255, unique=True)
-    base_curve = models.FloatField(max_length=255, default=8.6)
+    base_curve = models.FloatField(default=8.6)
     diameter = models.FloatField(max_length=255)
     power = models.FloatField(max_length=255, default=0.00)
     material = models.CharField(max_length=255, default='HEMA')

@@ -1,3 +1,7 @@
 .idea/
 .env/
 Pipfile
+.idea/
+db.sqlite3
+.env
+__pycache__/
