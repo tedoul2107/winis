@@ -2,6 +2,7 @@ import os
 
 from django.db import models
 from django.dispatch import receiver
+from core.models import User
 
 
 class Category(models.Model):
@@ -78,13 +79,33 @@ class StockVariation(models.Model):
 
     quantity = models.IntegerField()
     datetime = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    PENDING = 'PENDING'
+    CANCELLED = 'CANCELLED'
+    VALIDATED = 'VALIDATED'
+
+    STOCK_STATUS_CHOICES = [
+        (PENDING, 'PENDING'),
+        (CANCELLED, 'CANCELLED'),
+        (VALIDATED, 'VALIDATED')
+    ]
+
+    status = models.CharField(
+        max_length=25,
+        choices=STOCK_STATUS_CHOICES,
+        default=PENDING,
+    )
+
+    userId = models.ForeignKey(User, on_delete=models.CASCADE)
+
     eTag = models.CharField(max_length=255)
 
     def __str__(self):
-        return self.productId + ' ' + self.type + ' ' + self.quantity
+        return f'{self.productId} {self.type} {self.quantity} {self.status}'
 
     def contract(self):
-        return f'{self.productId} {self.type} {self.quantity} {self.quantity} {self.datetime}'
+        return f'{self.productId} {self.type} {self.quantity} {self.quantity} {self.datetime} {self.userId} {self.updated_at}'
 
 
 @receiver(models.signals.post_delete, sender=Product)
@@ -108,5 +129,3 @@ def auto_delete_file_on_change(sender, instance, **kwargs):
     if not old_file == new_file:
         if os.path.isfile(old_file.path):
             os.remove(old_file.path)
-
-

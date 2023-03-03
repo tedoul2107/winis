@@ -17,10 +17,15 @@ class UserSerializer(ModelSerializer):
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         instance = self.Meta.model(**validated_data)
+        role = validated_data.pop('role', 'ONLINE_SALE_MANAGER')
 
         if password is not None:
             instance.set_password(password)
             instance.eTag = hashlib.md5(instance.__str__().encode('utf-8')).hexdigest()
+
+        if role == 'ADMIN':
+            instance.is_superuser = True
+            instance.is_staff = True
 
         instance.save()
         return instance

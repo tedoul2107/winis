@@ -87,7 +87,7 @@ class ProductSerializer(ModelSerializer):
 class StockVariationSerializer(ModelSerializer):
     class Meta:
         model = StockVariation
-        fields = ['id', 'productId', 'type', 'quantity', 'datetime', 'eTag']
+        fields = ['id', 'productId', 'type', 'quantity', 'datetime', 'updated_at', 'status', 'userId', 'eTag']
         extra_kwargs = {
             'eTag': {"read_only": True}
         }
@@ -95,5 +95,12 @@ class StockVariationSerializer(ModelSerializer):
     def create(self, validated_data):
         instance = self.Meta.model(**validated_data)
         instance.eTag = hashlib.md5(instance.contract().encode('utf-8')).hexdigest()
+        instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        instance.status = validated_data.get('status', instance.status)
+        instance.eTag = hashlib.md5(instance.contract().encode('utf-8')).hexdigest()
+
         instance.save()
         return instance

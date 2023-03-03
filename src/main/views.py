@@ -10,6 +10,7 @@ from rest_framework.authentication import get_authorization_header
 from rest_framework import generics
 from django.db.models import Sum, Count
 from datetime import timedelta, datetime
+from django.core.paginator import Paginator
 
 
 def decode_access_token(token):
@@ -30,7 +31,7 @@ class CategoryAPIView(APIView):
         return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request):
-        categories = Category.objects.all()
+        categories = Category.objects.all().order_by('name')
         serializer = CategorySerializer(categories, many=True)
 
         for i in range(len(serializer.data)):
@@ -148,7 +149,7 @@ class SubCategoryAPIView(APIView):
 
     def get(self, request, id):
 
-        subcategories = SubCategory.objects.filter(categoryId=id)
+        subcategories = SubCategory.objects.filter(categoryId=id).order_by('name')
         serializer = SubCategorySerializer(subcategories, many=True)
 
         for i in range(len(serializer.data)):
@@ -290,7 +291,7 @@ class ModifySubCatAPIView(APIView):
 class ListSubCatAPIView(APIView):
 
     def get(self, request):
-        subcategories = SubCategory.objects.all()
+        subcategories = SubCategory.objects.all().order_by('name')
         serializer = SubCategorySerializer(subcategories, many=True)
 
         for i in range(len(serializer.data)):
@@ -327,6 +328,95 @@ class ListSubCatAPIView(APIView):
         return JsonResponse(serializer.data, safe=False)
 
 
+class ProductPaginationAPIView(APIView):
+    def get(self, request):
+
+        products = Product.objects.all().order_by('model')
+
+        paginator = Paginator(products, per_page=int(request.data['num_items']))
+        page = int(request.data['page'])
+        products = paginator.get_page(page)
+
+        serializer = ProductSerializer(products, many=True)
+
+        for i in range(len(serializer.data)):
+            serializer.data[i]['links'] = [
+                {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                 "action": "GET", "types": ["application/json"]}
+            ]
+
+            auth = get_authorization_header(request).split()
+            if auth and len(auth) == 2:
+                token = auth[1]
+
+                try:
+                    id = decode_access_token(token)
+
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                         "action": "POST", "types": ["application/json"]}
+                    )
+
+                except Exception:
+                    pass
+
+        return JsonResponse(serializer.data, safe=False)
+
+
+class ProductPaginationAPIView2(APIView):
+    def get(self, request, id):
+        products = Product.objects.filter(subcategoryId=id).order_by('model')
+
+        paginator = Paginator(products, per_page=int(request.data['num_items']))
+        page = int(request.data['page'])
+        products = paginator.get_page(page)
+
+        serializer = ProductSerializer(products, many=True)
+
+        for i in range(len(serializer.data)):
+            serializer.data[i]['links'] = [
+                {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "GET",
+                 "types": ["application/json"]},
+                {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                 "action": "GET", "types": ["application/json"]}
+            ]
+
+            auth = get_authorization_header(request).split()
+            if auth and len(auth) == 2:
+                token = auth[1]
+
+                try:
+                    id = decode_access_token(token)
+
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "PUT",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "self", "href": f"/api/v1/products/{serializer.data[i]['id']}", "action": "DELETE",
+                         "types": ["application/json"]}
+                    )
+                    serializer.data[i]['links'].append(
+                        {"rel": "stock_changes", "href": f"/api/v1/products/{serializer.data[i]['id']}/stock_changes",
+                         "action": "POST", "types": ["application/json"]}
+                    )
+
+                except Exception:
+                    pass
+
+        return JsonResponse(serializer.data, safe=False)
+
+
 class ProductAPIView(APIView):
 
     def post(self, request, id):
@@ -339,7 +429,7 @@ class ProductAPIView(APIView):
 
     def get(self, request, id):
 
-        products = Product.objects.filter(subcategoryId=id)
+        products = Product.objects.filter(subcategoryId=id).order_by('model')
         serializer = ProductSerializer(products, many=True)
 
         for i in range(len(serializer.data)):
@@ -452,7 +542,7 @@ class ModifyProductAPIView(APIView):
 class ListProductAPIView(APIView):
 
     def get(self, request):
-        products = Product.objects.all()
+        products = Product.objects.all().order_by('model')
         serializer = ProductSerializer(products, many=True)
 
         for i in range(len(serializer.data)):
@@ -489,37 +579,160 @@ class ListProductAPIView(APIView):
         return JsonResponse(serializer.data, safe=False)
 
 
-class StockVariationAPIView(APIView):
-
+class StockCreationAPIView(APIView):
     def post(self, request, id):
         request.data['productId'] = id
-        serializer = StockVariationSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-
-        try:
-            product = Product.objects.get(pk=id)
-        except Product.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
 
         if request.data['type'] == 'PLUS':
-            product.quantity += request.data['quantity']
-        elif request.data['type'] == 'MINUS':
-            if request.data['quantity'] > product.quantity:
-                return JsonResponse({"message": "error, product is so few"})
-            else:
-                product.quantity -= request.data['quantity']
+            request.data['status'] = 'VALIDATED'
 
-        serializer_p = ProductSerializer(product, data={'quantity': product.quantity, 'subcategoryId': product.subcategoryId.id,
-                                                        'model': product.model, 'color': product.color})
-        serializer_p.is_valid(raise_exception=True)
-        serializer_p.save()
+            try:
+                product = Product.objects.get(pk=id)
+            except Product.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            product.quantity += request.data['quantity']
+
+            serializer_p = ProductSerializer(product, data={'quantity': product.quantity,
+                                                            'subcategoryId': product.subcategoryId.id,
+                                                            'model': product.model, 'color': product.color})
+            serializer_p.is_valid(raise_exception=True)
+            serializer_p.save()
+
+        elif request.data['type'] == 'MINUS':
+            request.data['status'] = 'PENDING'
+
+        serializer = StockVariationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
         serializer.save()
         return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
 
     def get(self, request, id):
-        stockchanges = StockVariation.objects.filter(productId=id)
+        stockchanges = StockVariation.objects.filter(productId=id).order_by('-datetime')
         serializer = StockVariationSerializer(stockchanges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
+class ListVariationAPIView(APIView):
+    def get(self, request, id, status='pending'):
+        stockchanges = StockVariation.objects.filter(productId=id).filter(status=status.upper()).order_by('-datetime')
+        serializer = StockVariationSerializer(stockchanges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
+class ListVariationAPIView2(APIView):
+    def get(self, request, status):
+        stockchanges = StockVariation.objects.all().filter(status=status.upper()).order_by('-datetime')
+        serializer = StockVariationSerializer(stockchanges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
+class ListVariationAPIView3(APIView):
+    def get(self, request, userId, status='pending'):
+        stockchanges = StockVariation.objects.all().filter(userId=userId).filter(status=status.upper()).order_by('-datetime')
+        serializer = StockVariationSerializer(stockchanges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
+class SellProductAPIView(APIView):
+    def post(self, request, id):
+        request.data['productId'] = id
+        request.data['type'] = 'MINUS'
+        request.data['status'] = 'PENDING'
+
+        serializer = StockVariationSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        serializer.save()
+        return JsonResponse(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class StockVariationAPIView(APIView):
+
+    def get(self, request, id):
+
+        try:
+            stock_variation = StockVariation.objects.get(pk=id)
+        except StockVariation.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        serializer = StockVariationSerializer(stock_variation)
+        return JsonResponse(serializer.data, safe=False)
+
+    def put(self, request, id):
+
+        try:
+            stock_variation = StockVariation.objects.get(pk=id)
+        except StockVariation.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+        # request.data._mutable = True
+        request.data['productId'] = stock_variation.productId.id
+        request.data['userId'] = stock_variation.userId.id
+        request.data['quantity'] = stock_variation.quantity
+
+        serializer = StockVariationSerializer(stock_variation, data=request.data)
+
+        serializer.is_valid(raise_exception=True)
+
+        if (
+            request.data['status'] == 'VALIDATED'
+            and stock_variation.type == 'MINUS'
+            and stock_variation.status == 'PENDING'
+        ):
+            try:
+                product = Product.objects.get(pk=stock_variation.productId.id)
+            except Product.DoesNotExist:
+                return Response(status=status.HTTP_404_NOT_FOUND)
+
+            if request.data['quantity'] > product.quantity:
+                return JsonResponse({"message": "insufficient quantity"})
+            product.quantity -= request.data['quantity']
+
+            serializer_p = ProductSerializer(product, data={'quantity': product.quantity,
+                                                                    'subcategoryId': product.subcategoryId.id,
+                                                                    'model': product.model, 'color': product.color})
+            serializer_p.is_valid(raise_exception=True)
+            serializer_p.save()
+
+        if (
+                request.data['status'] == 'VALIDATED'
+                and stock_variation.status == 'CANCELLED'
+        ):
+            return JsonResponse({"message": "This variation is already cancelled, you can't validated"})
+
+        if (
+                request.data['status'] == 'VALIDATED'
+                and stock_variation.type == 'PLUS'
+        ):
+            return JsonResponse({"message": "This variation is already validated"})
+
+        if (
+                request.data['status'] == 'CANCELLED'
+                and stock_variation.status == 'VALIDATED'
+        ):
+            return JsonResponse({"message": "This variation is already validated"})
+
+        if (
+                request.data['status'] == 'CANCELLED'
+                and stock_variation.status == 'CANCELLED'
+        ):
+            return JsonResponse({"message": "This variation is already cancelled"})
+
+        if (
+                request.data['status'] == 'VALIDATED'
+                and stock_variation.status == 'VALIDATED'
+        ):
+            return JsonResponse({"message": "This variation is already validated"})
+
+        if (
+                request.data['status'] == 'PENDING'
+        ):
+            return JsonResponse({"message": "This operation is unauthorized"})
+
+        serializer.save()
+
         return JsonResponse(serializer.data, safe=False)
 
 
@@ -557,23 +770,36 @@ class SearchProductAPIView(generics.ListAPIView):
 class StatAPIView(APIView):
 
     def get_total_lens(self):
-        total = Product.objects.all().aggregate(Sum('quantity'))
+        try:
+            total = Product.objects.all().aggregate(Sum('quantity'))
+        except:
+            total = 0
+
         return total
 
     def get_total_sales(self):
-        total = (StockVariation.objects
+
+        try:
+            total = (StockVariation.objects.filter(status='VALIDATED')
                   .values('type')
                   .annotate(dcount=Sum('quantity'))
                   .order_by()
                   )
+        except:
+            total = 0
         return total
 
     def get_week_sales(self):
-        total = (StockVariation.objects.filter(datetime__gte=datetime.now()-timedelta(days=7))
+
+        try:
+            total = (StockVariation.objects.filter(status='VALIDATED')
+                     .filter(datetime__gte=datetime.now()-timedelta(days=7))
                  .values('type')
                  .annotate(dcount=Sum('quantity'))
                  .order_by()
                  )
+        except Exception:
+            total = 0
         return total
 
     def get(self, request):
@@ -583,12 +809,22 @@ class StatAPIView(APIView):
         week_sales = self.get_week_sales()
 
         if len(week_sales) > 0:
-            week_sales = week_sales[0]['dcount']
+            try:
+                week_sales = week_sales[0]['dcount']
+            except Exception:
+                week_sales = 0
         else:
             week_sales = 0
 
-        total_sales = total_sales[0]['dcount']
-        total_lens = total_lens['quantity__sum']
+        try:
+            total_sales = total_sales[0]['dcount']
+        except Exception:
+            total_sales = 0
+
+        try:
+            total_lens = total_lens['quantity__sum']
+        except Exception:
+            total_lens = 0
 
         # print(total_sales)
         # print(total_lens)
