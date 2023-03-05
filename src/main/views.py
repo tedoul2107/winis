@@ -333,9 +333,15 @@ class ProductPaginationAPIView(APIView):
 
         products = Product.objects.all().order_by('model')
 
-        paginator = Paginator(products, per_page=int(request.data['num_items']))
-        page = int(request.data['page'])
-        products = paginator.get_page(page)
+        limit = self.request.query_params.get('limit', 10)
+        offset = self.request.query_params.get('offset', 1)
+
+        paginator = Paginator(products, per_page=int(limit))
+        products = paginator.get_page(offset)
+
+        # paginator = Paginator(products, per_page=int(request.data['num_items']))
+        # page = int(request.data['page'])
+        # products = paginator.get_page(page)
 
         serializer = ProductSerializer(products, many=True)
 
@@ -377,9 +383,15 @@ class ProductPaginationAPIView2(APIView):
     def get(self, request, id):
         products = Product.objects.filter(subcategoryId=id).order_by('model')
 
-        paginator = Paginator(products, per_page=int(request.data['num_items']))
-        page = int(request.data['page'])
-        products = paginator.get_page(page)
+        limit = self.request.query_params.get('limit', 10)
+        offset = self.request.query_params.get('offset', 1)
+
+        paginator = Paginator(products, per_page=int(limit))
+        products = paginator.get_page(offset)
+
+        # paginator = Paginator(products, per_page=int(request.data['num_items']))
+        # page = int(request.data['page'])
+        # products = paginator.get_page(page)
 
         serializer = ProductSerializer(products, many=True)
 

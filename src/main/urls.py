@@ -25,6 +25,7 @@ urlpatterns = [
     re_path('products/filter', FilterProductAPIView.as_view()),
     re_path('products/search', SearchProductAPIView.as_view()),
     path('stats', StatAPIView.as_view()),
+
     path('products/pagination', ProductPaginationAPIView.as_view()),
     path('subcategories/<int:id>/products/pagination', ProductPaginationAPIView2.as_view())
 ]
