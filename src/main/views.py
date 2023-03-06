@@ -10,7 +10,7 @@ from rest_framework.authentication import get_authorization_header
 from rest_framework import generics
 from django.db.models import Sum, Count
 from datetime import timedelta, datetime
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 def decode_access_token(token):
@@ -333,11 +333,18 @@ class ProductPaginationAPIView(APIView):
 
         products = Product.objects.all().order_by('model')
 
-        limit = self.request.query_params.get('limit', 10)
-        offset = self.request.query_params.get('offset', 1)
+        try:
+            limit = int(self.request.query_params.get('limit', 10))
+            offset = int(self.request.query_params.get('offset', 1))
+        except:
+            limit = 10
+            offset = 1
 
-        paginator = Paginator(products, per_page=int(limit))
+        paginator = Paginator(products, per_page=limit)
         products = paginator.get_page(offset)
+
+        if offset > paginator.num_pages:
+            return JsonResponse([], safe=False)
 
         # paginator = Paginator(products, per_page=int(request.data['num_items']))
         # page = int(request.data['page'])
@@ -383,11 +390,18 @@ class ProductPaginationAPIView2(APIView):
     def get(self, request, id):
         products = Product.objects.filter(subcategoryId=id).order_by('model')
 
-        limit = self.request.query_params.get('limit', 10)
-        offset = self.request.query_params.get('offset', 1)
+        try:
+            limit = int(self.request.query_params.get('limit', 10))
+            offset = int(self.request.query_params.get('offset', 1))
+        except:
+            limit = 10
+            offset = 1
 
-        paginator = Paginator(products, per_page=int(limit))
+        paginator = Paginator(products, per_page=limit)
         products = paginator.get_page(offset)
+
+        if offset > paginator.num_pages:
+            return JsonResponse([], safe=False)
 
         # paginator = Paginator(products, per_page=int(request.data['num_items']))
         # page = int(request.data['page'])
