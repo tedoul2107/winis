@@ -661,6 +661,13 @@ class ListVariationAPIView3(APIView):
         return JsonResponse(serializer.data, safe=False)
 
 
+class ListVariationAPIView4(APIView):
+    def get(self, request):
+        stockchanges = StockVariation.objects.all().order_by('-datetime')
+        serializer = StockVariationSerializer(stockchanges, many=True)
+        return JsonResponse(serializer.data, safe=False)
+
+
 class SellProductAPIView(APIView):
     def post(self, request, id):
         request.data['productId'] = id

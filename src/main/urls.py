@@ -2,7 +2,7 @@ from django.urls import path, re_path
 from .views import CategoryAPIView, ModifyCategoryAPIView, SubCategoryAPIView, ModifySubCatAPIView, ListSubCatAPIView, \
     ProductAPIView, ModifyProductAPIView, ListProductAPIView, StockVariationAPIView, \
     SearchProductAPIView, StatAPIView, FilterProductAPIView, ProductPaginationAPIView, ProductPaginationAPIView2, \
-    StockCreationAPIView, SellProductAPIView, ListVariationAPIView, ListVariationAPIView2, ListVariationAPIView3
+    StockCreationAPIView, SellProductAPIView, ListVariationAPIView, ListVariationAPIView2, ListVariationAPIView3, ListVariationAPIView4
 
 urlpatterns = [
     path('categories', CategoryAPIView.as_view()),
@@ -21,6 +21,7 @@ urlpatterns = [
     path('products/<int:id>/stock_changes/<str:status>', ListVariationAPIView.as_view()),
     path('stock_changes/<str:status>', ListVariationAPIView2.as_view()),
     path('stock_changes/<int:userId>/<str:status>', ListVariationAPIView3.as_view()),
+    path('stock_changes', ListVariationAPIView4.as_view()),
 
     re_path('products/filter', FilterProductAPIView.as_view()),
     re_path('products/search', SearchProductAPIView.as_view()),
