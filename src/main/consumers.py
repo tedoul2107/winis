@@ -21,7 +21,23 @@ class ProductConsumer(GenericAsyncAPIConsumer):
 
     @model_change.serializer
     def model_serialize(self, instance, action, **kwargs):
-        return dict(data=ProductSerializer(instance=instance).data, action=action.value)
+
+        data = ProductSerializer(instance=instance).data
+
+        data['links'] = [
+            {"rel": "self", "href": f"/api/v1/products/{data['id']}", "action": "GET",
+             "types": ["application/json"]},
+            {"rel": "stock_changes", "href": f"/api/v1/products/{data['id']}/stock_changes",
+             "action": "GET", "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/products/{data['id']}", "action": "PUT",
+             "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/products/{data['id']}", "action": "DELETE",
+             "types": ["application/json"]},
+            {"rel": "stock_changes", "href": f"/api/v1/products/{data['id']}/stock_changes",
+             "action": "POST", "types": ["application/json"]}
+        ]
+
+        return dict(data=data, action=action.value)
 
 
 class VariationConsumer(GenericAsyncAPIConsumer):
