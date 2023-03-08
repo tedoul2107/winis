@@ -73,7 +73,22 @@ class SubCategoryConsumer(GenericAsyncAPIConsumer):
 
     @model_change.serializer
     def model_serialize(self, instance, action, **kwargs):
-        return dict(data=SubCategorySerializer(instance=instance).data, action=action.value)
+        data = SubCategorySerializer(instance=instance).data
+
+        data['links'] = [
+            {"rel": "self", "href": f"/api/v1/subcategories/{data['id']}", "action": "GET",
+             "types": ["application/json"]},
+            {"rel": "products", "href": f"/api/v1/subcategories/{data['id']}/products",
+             "action": "GET", "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/subcategories/{data['id']}", "action": "PUT",
+             "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/subcategories/{data['id']}", "action": "DELETE",
+             "types": ["application/json"]},
+            {"rel": "products", "href": f"/api/v1/subcategories/{data['id']}/products",
+             "action": "POST", "types": ["application/json"]}
+        ]
+
+        return dict(data=data, action=action.value)
 
 
 class CategoryConsumer(GenericAsyncAPIConsumer):
@@ -91,4 +106,20 @@ class CategoryConsumer(GenericAsyncAPIConsumer):
 
     @model_change.serializer
     def model_serialize(self, instance, action, **kwargs):
-        return dict(data=CategorySerializer(instance=instance).data, action=action.value)
+
+        data = CategorySerializer(instance=instance).data
+
+        data['links'] = [
+            {"rel": "self", "href": f"/api/v1/categories/{data['id']}", "action": "GET",
+             "types": ["application/json"]},
+            {"rel": "subcategories", "href": f"/api/v1/categories/{data['id']}/subcategories",
+             "action": "GET", "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/categories/{data['id']}", "action": "PUT",
+             "types": ["application/json"]},
+            {"rel": "self", "href": f"/api/v1/categories/{data['id']}", "action": "DELETE",
+             "types": ["application/json"]},
+            {"rel": "subcategories", "href": f"/api/v1/categories/{data['id']}/subcategories",
+             "action": "POST", "types": ["application/json"]}
+        ]
+
+        return dict(data=data, action=action.value)
