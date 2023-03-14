@@ -816,7 +816,7 @@ class StatAPIView(APIView):
             total = (StockVariation.objects.filter(status='VALIDATED')
                   .values('type')
                   .annotate(dcount=Sum('quantity'))
-                  .order_by()
+                  .order_by('type')
                   )
         except:
             total = 0
@@ -829,7 +829,7 @@ class StatAPIView(APIView):
                      .filter(updated_at__gte=datetime.now()-timedelta(days=7))
                  .values('type')
                  .annotate(dcount=Sum('quantity'))
-                 .order_by()
+                 .order_by('type')
                  )
         except Exception:
             total = 0
