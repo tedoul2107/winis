@@ -642,21 +642,21 @@ class StockCreationAPIView(APIView):
 
 class ListVariationAPIView(APIView):
     def get(self, request, id, status='pending'):
-        stockchanges = StockVariation.objects.filter(productId=id).filter(status=status.upper()).order_by('-datetime')
+        stockchanges = StockVariation.objects.filter(productId=id).filter(status=status.upper()).order_by('-updated_at')
         serializer = StockVariationSerializer(stockchanges, many=True)
         return JsonResponse(serializer.data, safe=False)
 
 
 class ListVariationAPIView2(APIView):
     def get(self, request, status):
-        stockchanges = StockVariation.objects.all().filter(status=status.upper()).order_by('-datetime')
+        stockchanges = StockVariation.objects.all().filter(status=status.upper()).order_by('-updated_at')
         serializer = StockVariationSerializer(stockchanges, many=True)
         return JsonResponse(serializer.data, safe=False)
 
 
 class ListVariationAPIView3(APIView):
     def get(self, request, userId, status='pending'):
-        stockchanges = StockVariation.objects.all().filter(userId=userId).filter(status=status.upper()).order_by('-datetime')
+        stockchanges = StockVariation.objects.all().filter(userId=userId).filter(status=status.upper()).order_by('-updated_at')
         serializer = StockVariationSerializer(stockchanges, many=True)
         return JsonResponse(serializer.data, safe=False)
 
@@ -826,7 +826,7 @@ class StatAPIView(APIView):
 
         try:
             total = (StockVariation.objects.filter(status='VALIDATED')
-                     .filter(datetime__gte=datetime.now()-timedelta(days=7))
+                     .filter(updated_at__gte=datetime.now()-timedelta(days=7))
                  .values('type')
                  .annotate(dcount=Sum('quantity'))
                  .order_by()
